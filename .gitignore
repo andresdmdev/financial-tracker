@@ -1,0 +1,32 @@
+# build output
+dist/
+.vercel/
+
+# dependencies
+node_modules/
+
+# generated types
+.astro/
+
+# environment variables
+.env
+.env.production
+.env*.local
+
+# raw data exported from Google Sheets (contains personal finances)
+data/
+
+# supabase local stack
+supabase/.temp/
+supabase/.branches/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# macOS / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

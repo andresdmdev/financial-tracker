@@ -1,0 +1,141 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+
+interface Props {
+  title: string;
+  heading?: string;
+}
+
+const { title, heading } = Astro.props;
+const { user } = Astro.locals;
+const { pathname } = Astro.url;
+
+/**
+ * The four sections, with the path of a Lucide icon each. Kept as raw path data
+ * rather than a React island: a navigation bar has no state to hydrate, and
+ * shipping JavaScript for it would delay the only interactive thing on screen.
+ */
+const links = [
+  { href: '/', label: 'Resumen', icon: 'M3 3v18h18M7 15l4-5 4 3 5-7' },
+  { href: '/transactions', label: 'Transacciones', icon: 'M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4' },
+  { href: '/budgets', label: 'Presupuestos', icon: 'M3 5h18v14H3zM3 10h18M8 15h4' },
+  { href: '/goals', label: 'Metas', icon: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 16a4 4 0 100-8 4 4 0 000 8z' },
+] as const;
+
+/**
+ * Marks the current section, treating `/` as an exact match so it does not
+ * light up on every route.
+ */
+function isActive(href: string): boolean {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
+---
+
+<AppLayout title={title}>
+  <div class="flex min-h-dvh flex-col">
+    <header class="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
+      <div class="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6 lg:gap-6 lg:px-8">
+        <a href="/" class="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          <span class="grid size-7 place-items-center rounded-lg bg-primary/12 text-primary">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-4"
+              aria-hidden="true"
+            >
+              <path d="M3 17l5-5 4 4 7-8" />
+            </svg>
+          </span>
+          <span class="hidden sm:inline">Financial Tracker</span>
+        </a>
+
+        <nav class="hidden flex-1 items-center gap-1 md:flex" aria-label="Secciones">
+          {
+            links.map((link) => (
+              <a
+                href={link.href}
+                aria-current={isActive(link.href) ? 'page' : undefined}
+                class:list={[
+                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                  isActive(link.href)
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                ]}
+              >
+                {link.label}
+              </a>
+            ))
+          }
+        </nav>
+
+        <div class="flex flex-1 items-center justify-end gap-3 md:flex-none">
+          <span class="hidden text-xs text-muted-foreground lg:inline">{user?.email}</span>
+          <form method="POST" action="/auth/signout">
+            <button
+              type="submit"
+              class="rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              Salir
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main
+      class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-10 md:pb-10"
+    >
+      {
+        heading && (
+          <div class="mb-6 flex flex-wrap items-center justify-between gap-4 lg:mb-7">
+            <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{heading}</h1>
+            <slot name="actions" />
+          </div>
+        )
+      }
+      <slot />
+    </main>
+
+    <nav
+      class="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
+      aria-label="Secciones"
+    >
+      <ul class="grid grid-cols-4">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={isActive(link.href) ? 'page' : undefined}
+                class:list={[
+                  'flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors',
+                  isActive(link.href) ? 'text-primary' : 'text-muted-foreground',
+                ]}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-5"
+                  aria-hidden="true"
+                >
+                  <path d={link.icon} />
+                </svg>
+                <span class="max-w-full truncate px-1">{link.label}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</AppLayout>

@@ -1,0 +1,180 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import SectionCard from '@/components/SectionCard.astro';
+import StatTile from '@/components/StatTile.astro';
+import GoalProgressChart from '@/components/charts/GoalProgressChart';
+import GoalAllocationEditor from '@/components/goals/GoalAllocationEditor';
+import GoalActions from '@/components/goals/GoalActions';
+import {
+  getGoal,
+  getGoalAllocations,
+  getGoalMovements,
+  toProgressSeries,
+} from '@/lib/queries/goals';
+import { getGoalProgress } from '@/lib/queries/dashboard';
+import { getLookups } from '@/lib/queries/transactions';
+import { formatDate, formatPercent, formatUsd } from '@/lib/format';
+
+const { id } = Astro.params;
+const { supabase } = Astro.locals;
+
+if (id === undefined) return Astro.redirect('/goals');
+
+const goal = await getGoal(supabase, id);
+if (goal === null) return Astro.redirect('/goals');
+
+const [movements, allocations, lookups, progressList] = await Promise.all([
+  getGoalMovements(supabase, id),
+  getGoalAllocations(supabase, id),
+  getLookups(supabase),
+  getGoalProgress(supabase),
+]);
+
+const progress = progressList.find((item) => item.goalId === id) ?? null;
+const series = toProgressSeries(movements);
+const recent = [...movements].reverse().slice(0, 10);
+
+const accumulated = progress?.currentAmountUsd ?? 0;
+const allocated = allocations.reduce((sum, item) => sum + item.amountUsd, 0);
+
+const STATUS_LABEL = {
+  active: 'Activa',
+  completed: 'Completada',
+  abandoned: 'Abandonada',
+} as const;
+---
+
+<DashboardLayout title={goal.name}>
+  <div class="space-y-6">
+    <header class="space-y-2">
+      <a
+        href="/goals"
+        class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        ← Metas de ahorro
+      </a>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{goal.name}</h1>
+          <span class="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+            {STATUS_LABEL[goal.status]}
+          </span>
+        </div>
+        <GoalActions
+          goalId={goal.id}
+          name={goal.name}
+          targetAmountUsd={goal.targetAmountUsd}
+          targetDate={goal.targetDate}
+          accountId={goal.accountId}
+          status={goal.status}
+          notes={goal.notes}
+          accounts={lookups.accounts}
+          movementCount={movements.length}
+          client:load
+        />
+      </div>
+      {
+        goal.notes !== null ? (
+          <p class="max-w-2xl text-sm text-muted-foreground">{goal.notes}</p>
+        ) : (
+          <p class="max-w-2xl text-sm text-muted-foreground/70">
+            Sin descripción. Puedes agregarla al editar la meta.
+          </p>
+        )
+      }
+    </header>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <StatTile label="Acumulado" value={formatUsd(accumulated)} accent />
+      <StatTile
+        label="Objetivo"
+        value={goal.targetAmountUsd === null ? '—' : formatUsd(goal.targetAmountUsd)}
+        hint={goal.targetDate === null ? undefined : `Para ${formatDate(goal.targetDate)}`}
+      />
+      <StatTile
+        label="Progreso"
+        value={progress?.progressRatio == null ? '—' : formatPercent(progress.progressRatio)}
+        hint={goal.targetAmountUsd === null
+          ? 'Sin objetivo definido'
+          : `Faltan ${formatUsd(Math.max(0, goal.targetAmountUsd - accumulated))}`}
+      />
+      <StatTile
+        label="Gastado desde la meta"
+        value={formatUsd(progress?.spentUsd ?? 0)}
+        hint={`Aportado ${formatUsd(progress?.contributedUsd ?? 0)}`}
+      />
+    </div>
+
+    <SectionCard
+      title="Progreso en el tiempo"
+      subtitle="Saldo acumulado tras cada movimiento. Los escalones son los aportes."
+    >
+      <GoalProgressChart data={series} targetUsd={goal.targetAmountUsd} client:visible />
+    </SectionCard>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <SectionCard
+        title="Dónde está el dinero"
+        subtitle="Reparto manual: las transacciones dicen de dónde salió, no dónde está hoy."
+      >
+        <GoalAllocationEditor
+          goalId={goal.id}
+          accumulatedUsd={accumulated}
+          allocations={allocations}
+          accounts={lookups.accounts}
+          client:load
+        />
+      </SectionCard>
+
+      <SectionCard title="Últimos movimientos" subtitle={`${movements.length} en total`}>
+        {
+          recent.length === 0 ? (
+            <p class="py-8 text-center text-sm text-muted-foreground">
+              Esta meta no tiene movimientos todavía.
+            </p>
+          ) : (
+            <ul class="divide-y divide-border">
+              {recent.map((movement) => (
+                <li class="flex items-baseline justify-between gap-4 py-2.5 text-sm first:pt-0">
+                  <span class="min-w-0">
+                    <span class="block truncate">
+                      {movement.direction === 'transfer'
+                        ? `Aporte desde ${movement.accountName}`
+                        : `Compra con ${movement.accountName}`}
+                    </span>
+                    <span class="block text-xs text-muted-foreground">
+                      {formatDate(movement.occurredOn)}
+                      {movement.notes !== null && ` · ${movement.notes}`}
+                    </span>
+                  </span>
+                  <span
+                    class:list={[
+                      'tabular shrink-0 font-medium',
+                      movement.direction === 'transfer' ? 'text-success' : 'text-destructive',
+                    ]}
+                  >
+                    {movement.direction === 'transfer' ? '+' : '−'}
+                    {formatUsd(movement.amountUsd)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </SectionCard>
+    </div>
+
+    {
+      allocations.length > 0 && Math.abs(accumulated - allocated) >= 0.01 && (
+        <p class="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          El reparto suma{' '}
+          <span class="tabular font-medium text-foreground">{formatUsd(allocated)}</span> pero la
+          meta acumula{' '}
+          <span class="tabular font-medium text-foreground">{formatUsd(accumulated)}</span>. La
+          diferencia no es un error del sistema: o moviste dinero sin registrarlo, o falta ubicar
+          una parte.
+        </p>
+      )
+    }
+  </div>
+</DashboardLayout>

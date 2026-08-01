@@ -1,0 +1,22 @@
+{
+  "schema": {
+    "DATE": "string (formato DD MMM YYYY)",
+    "CATEGORY": "enum [Comida, Proteína, Transporte, Ropa, Tecnología, Vivienda, Educación, Deuda, Ahorro, Gastos hormiga, Inversión, Sueldo, UPMacbook, Carro, Moto, Apartamento]",
+    "MEDIUM": "enum [Credit Card, Debit, Loan, Deel, Binance, Cash]",
+    "AMOUNT": "number | null (vacío en el ejemplo)",
+    "AMOUNT $": "number (valor monetario decimal)",
+    "STATUS": "enum [Paid, Pending]",
+    "NOTES": "string (descripción libre)"
+  },
+  "ejemplo": [
+    {
+      "DATE": "21 mar 2025",
+      "CATEGORY": "Tecnología",
+      "MEDIUM": "Credit Card",
+      "AMOUNT": null,
+      "AMOUNT $": 17.94,
+      "STATUS": "Paid",
+      "NOTES": "1Password"
+    }
+  ]
+}

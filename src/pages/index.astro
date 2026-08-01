@@ -1,0 +1,129 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import SectionCard from '@/components/SectionCard.astro';
+import StatTile from '@/components/StatTile.astro';
+import TrendChart from '@/components/charts/TrendChart';
+import CategoryTrendChart from '@/components/charts/CategoryTrendChart';
+import CategorySpendChart from '@/components/charts/CategorySpendChart';
+import NetWorthRadar from '@/components/charts/NetWorthRadar';
+import NetWorthTile from '@/components/dashboard/NetWorthTile';
+import {
+  getCategorySpend,
+  getCategoryTrend,
+  getDeclaredBalances,
+  getMonthlySummaries,
+  getNetWorth,
+} from '@/lib/queries/dashboard';
+import { formatMonth, formatPercent, formatUsd, toMonthKey } from '@/lib/format';
+
+const { supabase } = Astro.locals;
+const currentMonth = toMonthKey();
+
+const [summaries, categorySpend, categoryTrend, balances, netWorth] = await Promise.all([
+  getMonthlySummaries(supabase, 12),
+  getCategorySpend(supabase, currentMonth),
+  getCategoryTrend(supabase, 12),
+  getDeclaredBalances(supabase),
+  getNetWorth(supabase),
+]);
+
+const current = summaries.find((summary) => summary.periodMonth === currentMonth) ?? null;
+const previous = summaries.at(current === null ? -1 : -2) ?? null;
+
+const trend = summaries.map((summary) => ({
+  periodMonth: summary.periodMonth,
+  incomeUsd: summary.incomeUsd,
+  expenseUsd: summary.expenseUsd,
+}));
+
+const declaredCount = netWorth.accountsTotal - netWorth.accountsPending;
+
+/**
+ * Describes the month-over-month change in spending in plain language, which
+ * is more useful under a headline number than a bare percentage.
+ */
+function expenseHint(): string | undefined {
+  if (current === null || previous === null || previous.expenseUsd === 0) return undefined;
+  const delta = (current.expenseUsd - previous.expenseUsd) / previous.expenseUsd;
+  const direction = delta >= 0 ? 'más' : 'menos';
+  return `${formatPercent(Math.abs(delta))} ${direction} que ${formatMonth(previous.periodMonth)}`;
+}
+
+/**
+ * Says how current the net worth figure is. An undeclared account is the single
+ * biggest reason the number would be wrong, so it is stated rather than implied.
+ */
+function netWorthHint(): string {
+  if (declaredCount === 0) return 'Declara tus saldos para activarlo';
+  if (netWorth.accountsPending > 0) {
+    return `${declaredCount} de ${netWorth.accountsTotal} cuentas declaradas`;
+  }
+  return netWorth.debtUsd > 0
+    ? `Descontando ${formatUsd(netWorth.debtUsd)} de deuda`
+    : 'Todas las cuentas al día';
+}
+---
+
+<DashboardLayout title="Resumen" heading={"Finanzas - " + formatMonth(currentMonth)}>
+  <div class="space-y-6">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <NetWorthTile
+        netWorth={netWorth}
+        balances={balances}
+        label="Dinero ahorrado total"
+        hint={netWorthHint()}
+        client:load
+      />
+      <StatTile label="Ingresos del mes" value={formatUsd(current?.incomeUsd ?? 0)} />
+      <StatTile
+        label="Gastos del mes"
+        value={formatUsd(current?.expenseUsd ?? 0)}
+        hint={expenseHint()}
+      />
+      <StatTile
+        label="Neto del mes"
+        value={formatUsd(current?.netUsd ?? 0)}
+        hint={current?.savingsRate === null || current === null
+          ? undefined
+          : `Tasa de ahorro ${formatPercent(current.savingsRate)}`}
+        tone={(current?.netUsd ?? 0) >= 0 ? 'positive' : 'negative'}
+      />
+    </div>
+
+    {
+      current !== null && current.pendingExpenseUsd > 0 && (
+        <p class="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          Hay{' '}
+          <span class="tabular font-medium text-foreground">
+            {formatUsd(current.pendingExpenseUsd)}
+          </span>{' '}
+          en gastos pendientes este mes. No están incluidos en las cifras de arriba.
+        </p>
+      )
+    }
+
+    <SectionCard
+      title="Ingresos y gastos"
+      subtitle="Últimos 12 meses. Los traslados a ahorro no cuentan como gasto."
+    >
+      <TrendChart data={trend} client:visible />
+    </SectionCard>
+
+    <SectionCard
+      title="Gasto por categoría"
+      subtitle="Últimos 12 meses. Toca una categoría en la leyenda para aislarla."
+    >
+      <CategoryTrendChart data={categoryTrend} client:visible />
+    </SectionCard>
+
+    <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <SectionCard title="En qué se fue este mes" subtitle={formatMonth(currentMonth)}>
+        <CategorySpendChart data={categorySpend} client:visible />
+      </SectionCard>
+
+      <SectionCard title="Dónde está el dinero" subtitle="Saldo actual por cuenta">
+        <NetWorthRadar balances={balances} client:visible />
+      </SectionCard>
+    </div>
+  </div>
+</DashboardLayout>

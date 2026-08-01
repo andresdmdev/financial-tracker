@@ -1,0 +1,14 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import GoalsPanel from '@/components/goals/GoalsPanel';
+import { getGoalProgress } from '@/lib/queries/dashboard';
+import { getLookups } from '@/lib/queries/transactions';
+
+const { supabase } = Astro.locals;
+
+const [goals, lookups] = await Promise.all([getGoalProgress(supabase), getLookups(supabase)]);
+---
+
+<DashboardLayout title="Metas" heading="Metas de ahorro">
+  <GoalsPanel goals={goals} accounts={lookups.accounts} client:load />
+</DashboardLayout>

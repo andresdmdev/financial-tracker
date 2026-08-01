@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/**
+ * Kept so the `dark:` utilities inside the shadcn primitives keep compiling
+ * unchanged. The app ships light only, so no ancestor ever carries `.dark` and
+ * those rules stay inert.
+ */
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /**
+   * Outfit is self-hosted through `@fontsource-variable/outfit`, imported in
+   * `AppLayout.astro`. Bundling it rather than linking Google keeps every page
+   * load of a personal-finance app off a third party.
+   */
+  --font-sans: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/**
+ * Light-only palette built around a turquoise accent. Surfaces are near-white
+ * with a cool cast so cards read as raised without needing heavy borders.
+ */
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.985 0.006 200);
+  --foreground: oklch(0.25 0.021 235);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.25 0.021 235);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.25 0.021 235);
+  --primary: oklch(0.6 0.098 187);
+  --primary-foreground: oklch(0.99 0.005 190);
+  --secondary: oklch(0.962 0.014 195);
+  --secondary-foreground: oklch(0.35 0.033 200);
+  --muted: oklch(0.966 0.009 200);
+  --muted-foreground: oklch(0.522 0.023 220);
+  --accent: oklch(0.948 0.024 193);
+  --accent-foreground: oklch(0.32 0.042 200);
+  --destructive: oklch(0.583 0.201 16.5);
+  --destructive-foreground: oklch(0.99 0.005 190);
+  --success: oklch(0.6 0.098 187);
+  --success-foreground: oklch(0.99 0.005 190);
+  --border: oklch(0.911 0.013 205);
+  --input: oklch(0.898 0.014 205);
+  --ring: oklch(0.7 0.077 192);
+
+  /**
+   * Categorical series colours. Fixed hex, validated as a set against this
+   * light surface: lightness band, chroma floor, deuteranopia/protanopia
+   * separation, normal-vision separation and 3:1 contrast all pass. Assign them
+   * in this order and never cycle — re-validate before substituting any of them.
+   */
+  --chart-1: #0d9488;
+  --chart-2: #3b82f6;
+  --chart-3: #d97706;
+  --chart-4: #e11d48;
+  --chart-5: #8b5cf6;
+  --chart-6: #0891b2;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/**
+ * Tabular figures keep monetary columns aligned when digits change width.
+ * Applied to any element rendering an amount.
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
