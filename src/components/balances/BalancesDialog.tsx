@@ -293,7 +293,7 @@ export default function BalancesDialog({ balances }: Props): React.ReactElement 
                       </div>
                     )}
 
-                    <p className="tabular w-full pb-2 text-right text-sm font-medium sm:w-24">
+                    <p className="tabular w-full pb-2 text-right text-base font-medium sm:w-24 sm:text-sm">
                       {declared === null ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
@@ -315,7 +315,7 @@ export default function BalancesDialog({ balances }: Props): React.ReactElement 
 
           <div className="flex items-center justify-between rounded-lg bg-muted px-3 py-2.5">
             <span className="text-sm text-muted-foreground">Patrimonio declarado</span>
-            <span className="tabular text-base font-semibold">{formatUsd(total)}</span>
+            <span className="tabular text-lg font-semibold sm:text-base">{formatUsd(total)}</span>
           </div>
 
           <DialogFooter>

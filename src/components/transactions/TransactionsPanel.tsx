@@ -187,7 +187,7 @@ export default function TransactionsPanel({
                 </span>
                 <span
                   className={cn(
-                    'tabular shrink-0 font-medium whitespace-nowrap',
+                    'tabular shrink-0 text-lg font-medium whitespace-nowrap',
                     AMOUNT_CLASS[item.direction],
                   )}
                 >

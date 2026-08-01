@@ -69,7 +69,7 @@ export default function GoalProgressChart({ data, targetUsd }: Props): React.Rea
               value: `Meta ${formatUsdCompact(targetUsd)}`,
               position: 'insideTopRight',
               fill: 'var(--chart-3)',
-              fontSize: 11,
+              fontSize: 12,
             }}
           />
         )}

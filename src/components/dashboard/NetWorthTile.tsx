@@ -60,7 +60,7 @@ export default function NetWorthTile({
           )}
         </span>
       </span>
-      <span className="tabular shrink-0 font-medium">
+      <span className="tabular shrink-0 text-base font-medium sm:text-sm">
         {balance.currentUsd === null ? (
           <Badge variant="outline" className="font-normal text-muted-foreground">
             Pendiente
@@ -82,7 +82,7 @@ export default function NetWorthTile({
           <Card className="h-full cursor-pointer gap-0 border-primary/25 bg-primary/6 py-4 transition-colors hover:border-primary/45">
             <CardContent className="px-4">
               <p className="text-xs font-medium text-muted-foreground">{label}</p>
-              <p className="tabular mt-1.5 text-2xl font-semibold tracking-tight text-success">
+              <p className="tabular mt-1.5 text-3xl font-semibold tracking-tight text-success sm:text-2xl">
                 {declaredCount === 0 ? '—' : formatUsd(netWorth.netUsd)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">{hint} · ver desglose</p>
@@ -112,19 +112,23 @@ export default function NetWorthTile({
         <dl className="space-y-1.5 rounded-lg bg-muted px-3 py-2.5 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Activos</dt>
-            <dd className="tabular font-medium">{formatUsd(netWorth.assetsUsd)}</dd>
+            <dd className="tabular text-base font-medium sm:text-sm">
+              {formatUsd(netWorth.assetsUsd)}
+            </dd>
           </div>
           {netWorth.debtUsd !== 0 && (
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Deuda</dt>
-              <dd className="tabular font-medium text-destructive">
+              <dd className="tabular text-base font-medium text-destructive sm:text-sm">
                 −{formatUsd(Math.abs(netWorth.debtUsd))}
               </dd>
             </div>
           )}
           <div className="flex justify-between gap-3 border-t border-border pt-1.5">
             <dt className="text-muted-foreground">Total</dt>
-            <dd className="tabular font-semibold">{formatUsd(netWorth.netUsd)}</dd>
+            <dd className="tabular text-base font-semibold sm:text-sm">
+              {formatUsd(netWorth.netUsd)}
+            </dd>
           </div>
         </dl>
 

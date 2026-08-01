@@ -177,7 +177,7 @@ function ChartTooltipContent({
               />
             )}
             <span className="flex-1">{itemConfig?.label ?? item.name ?? key}</span>
-            <span className="tabular font-medium text-foreground">
+            <span className="tabular text-sm font-medium text-foreground sm:text-xs">
               {valueFormatter !== undefined ? valueFormatter(value, item) : value.toLocaleString()}
             </span>
           </p>

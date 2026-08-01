@@ -163,16 +163,18 @@ export default function GoalAllocationEditor({
       <dl className="space-y-1.5 rounded-lg bg-muted px-3 py-2.5 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Acumulado en la meta</dt>
-          <dd className="tabular font-medium">{formatUsd(accumulatedUsd)}</dd>
+          <dd className="tabular text-base font-medium sm:text-sm">{formatUsd(accumulatedUsd)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Repartido</dt>
-          <dd className="tabular font-medium">{formatUsd(assigned)}</dd>
+          <dd className="tabular text-base font-medium sm:text-sm">{formatUsd(assigned)}</dd>
         </div>
         {Math.abs(gap) >= 0.01 && (
           <div className="flex justify-between gap-3 border-t border-border pt-1.5">
             <dt className="text-muted-foreground">Sin ubicar</dt>
-            <dd className="tabular font-medium text-destructive">{formatUsd(gap)}</dd>
+            <dd className="tabular text-base font-medium text-destructive sm:text-sm">
+              {formatUsd(gap)}
+            </dd>
           </div>
         )}
       </dl>

@@ -237,7 +237,7 @@ export default function BudgetsPanel({
                         )}
                         {item.categoryName}
                       </p>
-                      <p className="tabular mt-0.5 text-sm text-muted-foreground">
+                      <p className="tabular mt-0.5 text-base text-muted-foreground sm:text-sm">
                         <span className="font-medium text-foreground">
                           {formatUsd(item.spentUsd)}
                         </span>

@@ -157,6 +157,15 @@ because `Intl` with `style: 'currency'` writes `US$` in `es-VE` and `narrowSymbo
 inside the symbol. Every amount in the app goes through `formatUsd`/`formatUsdCompact`, so that file is
 the only place to change it.
 
+Every amount also carries `.tabular` and steps up one size below `sm`, written mobile-first as
+`text-3xl sm:text-2xl` on headline figures, `text-lg` on the mobile transaction cards, and
+`text-base sm:text-sm` on row and total figures. A phone is read at arm's length and a balance is the
+one thing on screen worth reading at a glance; desktop keeps the sizes it already had. Match the
+neighbouring tier rather than inventing a size — the hierarchy between headline, row and caption is
+what makes a dense screen scannable. An amount embedded mid-sentence is the exception and takes the
+sentence's size, since a larger run of text inside a paragraph breaks the line rhythm. Text inside
+charts is SVG with fixed pixel sizes and does not follow the breakpoint.
+
 The layout is responsive without exception. Above `md` the sections are pills in the header; below it
 they are a fixed bottom tab bar, and `<main>` reserves `pb-[calc(5.5rem+env(safe-area-inset-bottom))]`
 so nothing hides under it. The transaction list is a `<table>` from `sm` up and a card list below —

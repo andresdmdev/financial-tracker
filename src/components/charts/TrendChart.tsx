@@ -87,7 +87,9 @@ export default function TrendChart({ data }: Props): React.ReactElement {
                 return (
                   <p className="flex items-center gap-2 text-muted-foreground">
                     <span className="flex-1">Neto</span>
-                    <span className="tabular font-medium text-foreground">{formatUsd(net)}</span>
+                    <span className="tabular text-sm font-medium text-foreground sm:text-xs">
+                      {formatUsd(net)}
+                    </span>
                   </p>
                 );
               }}

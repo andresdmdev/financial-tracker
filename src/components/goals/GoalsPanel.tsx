@@ -116,7 +116,7 @@ export default function GoalsPanel({ goals, accounts }: Props): React.ReactEleme
                     </div>
 
                     <div>
-                      <p className="tabular text-2xl font-semibold tracking-tight">
+                      <p className="tabular text-3xl font-semibold tracking-tight sm:text-2xl">
                         {formatUsd(goal.currentAmountUsd)}
                       </p>
                       {goal.targetAmountUsd !== null && (

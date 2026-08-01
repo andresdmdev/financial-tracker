@@ -96,7 +96,7 @@ export default function CategorySpendChart({ data }: Props): React.ReactElement 
             position="right"
             offset={8}
             className="fill-muted-foreground"
-            fontSize={11}
+            fontSize={12}
             formatter={(value) =>
               formatUsd(typeof value === 'number' || typeof value === 'string' ? value : null)
             }
