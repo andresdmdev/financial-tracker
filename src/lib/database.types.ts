@@ -170,6 +170,26 @@ type CategorySpendRow = {
   tx_count: number;
 }
 
+/** Return shape of `v_account_monthly_spend`, one row per account and month. */
+type AccountMonthlySpendRow = {
+  user_id: string;
+  period_month: string;
+  account_id: string;
+  account_name: string;
+  account_type: AccountType;
+  total_usd: number;
+  tx_count: number;
+}
+
+/** Return shape of `v_tag_monthly_spend`, one row per tag and month. */
+type TagMonthlySpendRow = {
+  user_id: string;
+  period_month: string;
+  tag: string;
+  total_usd: number;
+  tx_count: number;
+}
+
 type AccountBalanceRow = {
   user_id: string;
   account_id: string;
@@ -334,6 +354,8 @@ export interface Database {
     Views: {
       v_monthly_summary: { Row: MonthlySummaryRow; Relationships: [] };
       v_category_spend: { Row: CategorySpendRow; Relationships: [] };
+      v_account_monthly_spend: { Row: AccountMonthlySpendRow; Relationships: [] };
+      v_tag_monthly_spend: { Row: TagMonthlySpendRow; Relationships: [] };
       v_account_balances: { Row: AccountBalanceRow; Relationships: [] };
       v_account_ledger: { Row: AccountLedgerRow; Relationships: [] };
       v_declared_balances: { Row: DeclaredBalanceRow; Relationships: [] };

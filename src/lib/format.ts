@@ -116,3 +116,22 @@ export function toMonthKey(date: Date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}-01`;
 }
+
+/**
+ * Returns the last `months` month keys ending with the current one, oldest
+ * first. Charts use it to draw a dense axis: without every month present, a
+ * month with no spend becomes a gap the line jumps over instead of a zero.
+ */
+export function monthKeys(months: number): string[] {
+  const keys: string[] = [];
+  const cursor = new Date();
+  cursor.setUTCDate(1);
+  cursor.setUTCMonth(cursor.getUTCMonth() - (months - 1));
+
+  for (let index = 0; index < months; index += 1) {
+    keys.push(`${cursor.toISOString().slice(0, 8)}01`);
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return keys;
+}

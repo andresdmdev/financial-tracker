@@ -308,7 +308,7 @@ export default function TransactionForm({
         <Input
           id="tags"
           type="text"
-          placeholder="gastos-hormiga, reembolsable"
+          placeholder="gastos-hormiga, subscripcion"
           value={form.tags}
           onChange={(event) => update('tags', event.target.value)}
         />

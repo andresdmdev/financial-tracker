@@ -3,6 +3,13 @@ import type { Database, LocalCurrency } from '@/lib/database.types';
 
 type Client = SupabaseClient<Database>;
 
+/**
+ * The tag a recurring charge carries. Tags are free text with no catalogue, so
+ * this constant is the only agreement between what gets typed into a
+ * transaction and what the subscriptions chart looks for.
+ */
+export const SUBSCRIPTION_TAG = 'subscripcion';
+
 export interface MonthlySummary {
   periodMonth: string;
   incomeUsd: number;
@@ -69,6 +76,11 @@ export interface CategoryTrendPoint {
   totalUsd: number;
 }
 
+export interface MonthlyAmount {
+  periodMonth: string;
+  totalUsd: number;
+}
+
 export interface GoalProgress {
   goalId: string;
   name: string;
@@ -106,6 +118,34 @@ function unwrap<T>(result: { data: T[] | null; error: { message: string } | null
     throw new Error(`No se pudo cargar ${what}: ${result.error.message}`);
   }
   return result.data ?? [];
+}
+
+/**
+ * First day of the month `months - 1` back, as the `YYYY-MM-01` key the period
+ * columns are stored in. Computed in UTC so the window never shifts a month for
+ * anyone loading the dashboard in the evening west of UTC.
+ */
+function sinceMonth(months: number): string {
+  const since = new Date();
+  since.setUTCDate(1);
+  since.setUTCMonth(since.getUTCMonth() - (months - 1));
+  return since.toISOString().slice(0, 8) + '01';
+}
+
+/**
+ * Rolls long-form rows up into one total per month, oldest first. The chart
+ * fills in the months that are missing, so gaps here are expected.
+ */
+function byMonth(rows: { period_month: string; total_usd: number | string }[]): MonthlyAmount[] {
+  const totals = new Map<string, number>();
+
+  for (const row of rows) {
+    totals.set(row.period_month, (totals.get(row.period_month) ?? 0) + num(row.total_usd));
+  }
+
+  return [...totals.entries()]
+    .map(([periodMonth, totalUsd]) => ({ periodMonth, totalUsd }))
+    .sort((a, b) => a.periodMonth.localeCompare(b.periodMonth));
 }
 
 /**
@@ -261,15 +301,10 @@ export async function getCategoryTrend(
   supabase: Client,
   months = 12,
 ): Promise<CategoryTrendPoint[]> {
-  const since = new Date();
-  since.setUTCDate(1);
-  since.setUTCMonth(since.getUTCMonth() - (months - 1));
-  const from = since.toISOString().slice(0, 8) + '01';
-
   const result = await supabase
     .from('v_category_spend')
     .select('period_month, category_id, category_name, total_usd')
-    .gte('period_month', from)
+    .gte('period_month', sinceMonth(months))
     .order('period_month', { ascending: true });
 
   return unwrap(result, 'la tendencia por categoría').map((row) => ({
@@ -278,6 +313,46 @@ export async function getCategoryTrend(
     categoryName: row.category_name,
     totalUsd: num(row.total_usd),
   }));
+}
+
+/**
+ * Returns what was charged to a credit card each of the last `months` months.
+ *
+ * Only `direction = 'expense'` counts. Paying the card down is a transfer into
+ * the card account, and counting it would double the month it was paid while
+ * saying nothing about what was actually bought. Totals are summed across cards
+ * so a second card would fold into the same series rather than disappear.
+ */
+export async function getCreditCardSpend(supabase: Client, months = 12): Promise<MonthlyAmount[]> {
+  const result = await supabase
+    .from('v_account_monthly_spend')
+    .select('period_month, total_usd')
+    .eq('account_type', 'credit_card')
+    .gte('period_month', sinceMonth(months));
+
+  return byMonth(unwrap(result, 'el gasto con tarjeta'));
+}
+
+/**
+ * Returns how much was spent under a single tag each of the last `months`
+ * months.
+ *
+ * The match is exact and case-sensitive, because that is how the tag is stored:
+ * `src/lib/schemas.ts` normalises nothing, so `Subscripcion` and `subscripcion`
+ * are two different labels and only the one asked for is counted.
+ */
+export async function getTagMonthlySpend(
+  supabase: Client,
+  tag: string,
+  months = 12,
+): Promise<MonthlyAmount[]> {
+  const result = await supabase
+    .from('v_tag_monthly_spend')
+    .select('period_month, total_usd')
+    .eq('tag', tag)
+    .gte('period_month', sinceMonth(months));
+
+  return byMonth(unwrap(result, `el gasto etiquetado ${tag}`));
 }
 
 /**

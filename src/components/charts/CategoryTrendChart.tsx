@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 import type { CategoryTrendPoint } from '@/lib/queries/dashboard';
-import { formatMonth, formatUsd, formatUsdCompact } from '@/lib/format';
+import { formatMonth, formatUsd, formatUsdCompact, monthKeys } from '@/lib/format';
 import {
   ChartContainer,
   ChartTooltip,
@@ -37,24 +37,6 @@ interface Series {
 interface Shaped {
   rows: Record<string, string | number>[];
   series: Series[];
-}
-
-/**
- * Builds the month axis as a dense range so a category with no spend in a month
- * reads as zero rather than as a gap the line jumps over.
- */
-function monthKeys(months: number): string[] {
-  const keys: string[] = [];
-  const cursor = new Date();
-  cursor.setUTCDate(1);
-  cursor.setUTCMonth(cursor.getUTCMonth() - (months - 1));
-
-  for (let index = 0; index < months; index += 1) {
-    keys.push(`${cursor.toISOString().slice(0, 8)}01`);
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
-
-  return keys;
 }
 
 /**

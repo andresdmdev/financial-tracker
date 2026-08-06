@@ -6,25 +6,39 @@ import TrendChart from '@/components/charts/TrendChart';
 import CategoryTrendChart from '@/components/charts/CategoryTrendChart';
 import CategorySpendChart from '@/components/charts/CategorySpendChart';
 import NetWorthRadar from '@/components/charts/NetWorthRadar';
+import MonthlyAmountChart from '@/components/charts/MonthlyAmountChart';
 import NetWorthTile from '@/components/dashboard/NetWorthTile';
 import {
   getCategorySpend,
   getCategoryTrend,
+  getCreditCardSpend,
   getDeclaredBalances,
   getMonthlySummaries,
   getNetWorth,
+  getTagMonthlySpend,
+  SUBSCRIPTION_TAG,
 } from '@/lib/queries/dashboard';
 import { formatMonth, formatPercent, formatUsd, toMonthKey } from '@/lib/format';
 
 const { supabase } = Astro.locals;
 const currentMonth = toMonthKey();
 
-const [summaries, categorySpend, categoryTrend, balances, netWorth] = await Promise.all([
+const [
+  summaries,
+  categorySpend,
+  categoryTrend,
+  balances,
+  netWorth,
+  creditCardSpend,
+  subscriptionSpend,
+] = await Promise.all([
   getMonthlySummaries(supabase, 12),
   getCategorySpend(supabase, currentMonth),
   getCategoryTrend(supabase, 12),
   getDeclaredBalances(supabase),
   getNetWorth(supabase),
+  getCreditCardSpend(supabase, 12),
+  getTagMonthlySpend(supabase, SUBSCRIPTION_TAG, 12),
 ]);
 
 const current = summaries.find((summary) => summary.periodMonth === currentMonth) ?? null;
@@ -50,16 +64,18 @@ function expenseHint(): string | undefined {
 }
 
 /**
- * Says how current the net worth figure is. An undeclared account is the single
+ * Says how current the headline figure is. An undeclared account is the single
  * biggest reason the number would be wrong, so it is stated rather than implied.
+ * Debt is named too, since it sits outside the total rather than inside it.
  */
 function netWorthHint(): string {
   if (declaredCount === 0) return 'Declara tus saldos para activarlo';
   if (netWorth.accountsPending > 0) {
     return `${declaredCount} de ${netWorth.accountsTotal} cuentas declaradas`;
   }
-  return netWorth.debtUsd > 0
-    ? `Descontando ${formatUsd(netWorth.debtUsd)} de deuda`
+  const debtUsd = Math.abs(netWorth.debtUsd);
+  return debtUsd > 0
+    ? `Aparte tienes ${formatUsd(debtUsd)} de deuda`
     : 'Todas las cuentas al día';
 }
 ---
@@ -114,6 +130,28 @@ function netWorthHint(): string {
       subtitle="Últimos 12 meses. Toca una categoría en la leyenda para aislarla."
     >
       <CategoryTrendChart data={categoryTrend} client:visible />
+    </SectionCard>
+
+    <SectionCard
+      title="Gasto con tarjeta de crédito"
+      subtitle="Últimos 12 meses. Pagar la tarjeta es un traslado, no cuenta como gasto."
+    >
+      <MonthlyAmountChart
+        data={creditCardSpend}
+        empty="Sin gastos cargados a la tarjeta en los últimos 12 meses."
+        client:visible
+      />
+    </SectionCard>
+
+    <SectionCard
+      title="Suscripciones"
+      subtitle={`Últimos 12 meses. Gastos con la etiqueta ${SUBSCRIPTION_TAG}.`}
+    >
+      <MonthlyAmountChart
+        data={subscriptionSpend}
+        empty={`Ningún gasto lleva la etiqueta ${SUBSCRIPTION_TAG} todavía. Agrégala al registrar una suscripción y aparecerá aquí.`}
+        client:visible
+      />
     </SectionCard>
 
     <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">

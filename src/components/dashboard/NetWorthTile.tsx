@@ -20,13 +20,22 @@ interface Props {
 }
 
 /**
- * Total money held, opening a breakdown of where it sits.
+ * Money actually held, opening a breakdown of where it sits.
  *
- * The headline is a single number that nobody can audit on its own, so the tile
- * is a button: one tap shows each account's balance today, the figure that was
- * last declared for it, and when. The gap between those two columns is the
+ * The headline is assets only. A credit card is not money you have, and adding
+ * a debt to a figure labelled "saved" makes it answer no question at all — so
+ * the card is reported inside the breakdown without moving the total.
+ *
+ * That headline is a single number nobody can audit on its own, so the tile is a
+ * button: one tap shows each account's balance today, the figure that was last
+ * declared for it, and when. The gap between those two columns is the
  * transactions recorded since — which is exactly what somebody doubting the
  * total wants to see.
+ *
+ * Debt is read as a magnitude rather than trusting the sign it was declared
+ * with: nothing in the balance dialog stops a card being entered as a positive
+ * number, and a "net" that grew when a debt was recorded would be worse than no
+ * figure at all.
  */
 export default function NetWorthTile({
   netWorth,
@@ -39,6 +48,7 @@ export default function NetWorthTile({
   const declaredCount = netWorth.accountsTotal - netWorth.accountsPending;
   const assets = balances.filter((balance) => balance.isAsset);
   const debts = balances.filter((balance) => !balance.isAsset);
+  const debtUsd = Math.abs(netWorth.debtUsd);
 
   const row = (balance: DeclaredBalance): React.ReactElement => (
     <li
@@ -83,7 +93,7 @@ export default function NetWorthTile({
             <CardContent className="px-4">
               <p className="text-xs font-medium text-muted-foreground">{label}</p>
               <p className="tabular mt-1.5 text-3xl font-semibold tracking-tight text-success sm:text-2xl">
-                {declaredCount === 0 ? '—' : formatUsd(netWorth.netUsd)}
+                {declaredCount === 0 ? '—' : formatUsd(netWorth.assetsUsd)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">{hint} · ver desglose</p>
             </CardContent>
@@ -116,20 +126,22 @@ export default function NetWorthTile({
               {formatUsd(netWorth.assetsUsd)}
             </dd>
           </div>
-          {netWorth.debtUsd !== 0 && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Deuda</dt>
-              <dd className="tabular text-base font-medium text-destructive sm:text-sm">
-                −{formatUsd(Math.abs(netWorth.debtUsd))}
-              </dd>
-            </div>
+          {debtUsd > 0 && (
+            <>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Deuda</dt>
+                <dd className="tabular text-base font-medium text-destructive sm:text-sm">
+                  −{formatUsd(debtUsd)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3 border-t border-border pt-1.5">
+                <dt className="text-muted-foreground">Neto descontando deuda</dt>
+                <dd className="tabular text-base font-semibold sm:text-sm">
+                  {formatUsd(netWorth.assetsUsd - debtUsd)}
+                </dd>
+              </div>
+            </>
           )}
-          <div className="flex justify-between gap-3 border-t border-border pt-1.5">
-            <dt className="text-muted-foreground">Total</dt>
-            <dd className="tabular text-base font-semibold sm:text-sm">
-              {formatUsd(netWorth.netUsd)}
-            </dd>
-          </div>
         </dl>
 
         {netWorth.accountsPending > 0 && (
