@@ -1,13 +1,14 @@
 import type { APIRoute } from 'astro';
-import { ADMIN_EMAIL } from '@/lib/env';
+import { resolveAccess } from '@/lib/access';
 
 /**
  * Completes the Google OAuth flow.
  *
- * Exchanges the authorization code for a session and re-checks the admin email
- * before letting the cookies stand. The middleware performs the same check on
- * every later request; doing it here means a rejected identity never gets a
- * usable session in the first place.
+ * Exchanges the authorization code for a session and re-checks access — the
+ * admin email or a guest with a shared goal — before letting the cookies
+ * stand. The middleware performs the same check on every later request; doing
+ * it here means a rejected identity never gets a usable session in the first
+ * place.
  */
 export const GET: APIRoute = async ({ locals, url, redirect }) => {
   const providerError = url.searchParams.get('error_description') ?? url.searchParams.get('error');
@@ -29,7 +30,7 @@ export const GET: APIRoute = async ({ locals, url, redirect }) => {
     data: { user },
   } = await locals.supabase.auth.getUser();
 
-  if (user?.email?.trim().toLowerCase() !== ADMIN_EMAIL) {
+  if (user === null || (await resolveAccess(locals.supabase, user)) === null) {
     await locals.supabase.auth.signOut();
     return redirect('/login?error=Esta%20cuenta%20no%20tiene%20acceso');
   }

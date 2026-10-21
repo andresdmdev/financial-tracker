@@ -6,9 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, SelectField, type FieldOption } from '@/components/forms/Field';
 
+/** A goal the new transaction is pinned to, and the account that holds it. */
+export interface FixedGoal {
+  id: string;
+  accountId: string | null;
+}
+
 interface Props {
   lookups: Lookups;
   transaction: TransactionListItem | null;
+  /** When set, the goal is not selectable and the form opens as a contribution. */
+  fixedGoal?: FixedGoal;
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -48,8 +56,31 @@ const CURRENCY_OPTIONS: FieldOption[] = [
 /**
  * Builds the initial form state, falling back to a paid expense dated today,
  * which is by far the most common entry.
+ *
+ * Opened from a goal, a new entry starts instead as a transfer into the goal's
+ * own account, because contributing is what most movements on a goal are.
  */
-function initialState(transaction: TransactionListItem | null): FormState {
+function initialState(
+  transaction: TransactionListItem | null,
+  fixedGoal: FixedGoal | undefined,
+): FormState {
+  if (transaction === null && fixedGoal !== undefined) {
+    return {
+      occurred_on: new Date().toISOString().slice(0, 10),
+      direction: 'transfer',
+      account_id: '',
+      to_account_id: fixedGoal.accountId ?? '',
+      category_id: '',
+      goal_id: fixedGoal.id,
+      amount_usd: '',
+      amount_local: '',
+      local_currency: '',
+      status: 'paid',
+      tags: '',
+      notes: '',
+    };
+  }
+
   if (transaction === null) {
     return {
       occurred_on: new Date().toISOString().slice(0, 10),
@@ -93,10 +124,11 @@ function initialState(transaction: TransactionListItem | null): FormState {
 export default function TransactionForm({
   lookups,
   transaction,
+  fixedGoal,
   onCancel,
   onSaved,
 }: Props): React.ReactElement {
-  const [form, setForm] = useState<FormState>(() => initialState(transaction));
+  const [form, setForm] = useState<FormState>(() => initialState(transaction, fixedGoal));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -292,12 +324,14 @@ export default function TransactionForm({
           onChange={(value) => update('status', value as TxStatus)}
         />
 
-        <SelectField
-          label="Meta de ahorro (opcional)"
-          value={form.goal_id === '' ? 'none' : form.goal_id}
-          options={goalOptions}
-          onChange={(value) => update('goal_id', value === 'none' ? '' : value)}
-        />
+        {fixedGoal === undefined && (
+          <SelectField
+            label="Meta de ahorro (opcional)"
+            value={form.goal_id === '' ? 'none' : form.goal_id}
+            options={goalOptions}
+            onChange={(value) => update('goal_id', value === 'none' ? '' : value)}
+          />
+        )}
       </div>
 
       <Field

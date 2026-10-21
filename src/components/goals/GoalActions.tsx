@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import type { LookupOption } from '@/lib/queries/transactions';
+import type { Lookups } from '@/lib/queries/transactions';
+import type { GoalShare } from '@/lib/queries/goals';
 import type { GoalStatus } from '@/lib/database.types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import GoalForm from '@/components/goals/GoalForm';
+import GoalShareDialog from '@/components/goals/GoalShareDialog';
+import TransactionForm from '@/components/transactions/TransactionForm';
 import {
   Dialog,
   DialogContent,
@@ -32,12 +35,17 @@ interface Props {
   accountId: string | null;
   status: GoalStatus;
   notes: string | null;
-  accounts: LookupOption[];
+  lookups: Lookups;
+  shares: GoalShare[];
   movementCount: number;
 }
 
 /**
- * Edit and delete controls for a single savings goal.
+ * Owner controls for a single savings goal: record a movement on it, share it
+ * with a guest, edit it and delete it.
+ *
+ * A new movement opens the same `TransactionForm` used on /transactions with
+ * the goal pinned, so the two entry points can never disagree on validation.
  *
  * Deletion is confirmed through an `AlertDialog` rather than `window.confirm`:
  * the native dialog is drawn by the operating system and ignores the page's
@@ -55,9 +63,11 @@ export default function GoalActions({
   accountId,
   status,
   notes,
-  accounts,
+  lookups,
+  shares,
   movementCount,
 }: Props): React.ReactElement {
+  const [isCreateOpen, setCreateOpen] = useState(false);
   const [isEditOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +90,31 @@ export default function GoalActions({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Dialog open={isCreateOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm">Nuevo movimiento</Button>
+          </DialogTrigger>
+
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Nuevo movimiento en «{name}»</DialogTitle>
+              <DialogDescription>
+                Un aporte es un traslado hacia la cuenta de la meta; usar el dinero es un gasto.
+              </DialogDescription>
+            </DialogHeader>
+            <TransactionForm
+              lookups={lookups}
+              transaction={null}
+              fixedGoal={{ id: goalId, accountId }}
+              onCancel={() => setCreateOpen(false)}
+              onSaved={() => window.location.reload()}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <GoalShareDialog goalId={goalId} categories={lookups.categories} shares={shares} />
+
         <Dialog open={isEditOpen} onOpenChange={setEditOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
@@ -98,7 +132,7 @@ export default function GoalActions({
             </DialogHeader>
 
             <GoalForm
-              accounts={accounts}
+              accounts={lookups.accounts}
               goalId={goalId}
               initial={{
                 name,

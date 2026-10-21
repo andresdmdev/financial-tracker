@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-user personal finance tracker. It replaces a Google Sheets workbook that was the previous source
+A single-owner personal finance tracker. It replaces a Google Sheets workbook that was the previous source
 of truth. Supabase (Postgres + Auth) is now the only source of truth; the spreadsheet was imported once and
-is no longer synced. Only one Google account — `ADMIN_EMAIL` — may sign in.
+is no longer synced. All data belongs to `ADMIN_EMAIL`. The only other people who may sign in are guests
+of a shared goal (see below), and they own no data.
 
 `schema-example.json` documents the **old** spreadsheet shape. It is kept as a reference for the import
 script and must not be treated as the current data model.
@@ -121,6 +122,19 @@ These are enforced by check constraints; code must not work around them.
   answer "what is the budget for month X".
 - **`goal_allocations` is manual and stays manual.** It records where a goal's money sits today;
   transactions record where it came from. Deriving one from the other produces a confident wrong answer.
+- **A guest is a narrow second role, not a second user of the data.** `goal_shares` grants an email
+  access to one goal. `src/lib/access.ts` resolves `locals.role` (`owner | member`) and confines a guest
+  to `/goals/<shared id>` and `POST /api/goals/<shared id>/movements`, but that is UI only: the guest
+  holds a JWT and the anon key, so the `*_member_*` RLS policies are the real boundary. A guest has
+  select and insert policies and deliberately no update or delete. Every row a guest writes carries the
+  **owner's** `user_id`, the share's account (`En manos de <nombre>`) and the share's category for its
+  direction; the insert policy rejects anything else. Never let a guest choose an account or category.
+- **Authorship is stamped, never sent.** `transactions.created_by_email` / `created_by_name` are set by
+  the `set_transaction_author` trigger from the JWT and frozen on update. A guest is named by
+  `goal_shares.member_name`, which the owner wrote, not by its own editable `user_metadata`. Spreadsheet
+  rows have no author and render as "Importado de la hoja".
+- **Income charged to a goal counts as a contribution.** `v_goal_progress` and `toProgressSeries` add
+  `transfer` and `income`, subtract `expense`.
 
 Dashboard figures come from the `v_*` views in Postgres, not from client-side aggregation. Add a view
 rather than pulling rows into the browser to sum them. Every view is declared `security_invoker = true`;
@@ -175,8 +189,10 @@ a six-column table that scrolls sideways on a phone fits the viewport without be
 
 - RLS is enabled on every table with `auth.uid() = user_id`. New tables need a `user_id` column and the
   same four policies before any code reads them.
-- Signups are disabled in Supabase Auth and the middleware rejects any email other than `ADMIN_EMAIL`.
-  Both layers stay — do not remove one because the other exists.
+- Signups are disabled in Supabase Auth and the middleware rejects any email that is neither
+  `ADMIN_EMAIL` nor a guest with a `goal_shares` row. Both layers stay — do not remove one because the
+  other exists. A guest's auth user is created by hand in the Supabase dashboard.
+- `handle_new_user` seeds starter data only for the first user, so a guest owns nothing.
 - Only `PUBLIC_*` variables may reach the browser. `SUPABASE_SERVICE_ROLE_KEY` is local-script-only.
 - `data/` is git-ignored and holds the raw spreadsheet export with real personal finances. Never commit it
   and never paste its contents into code or tests.

@@ -1,10 +1,11 @@
 # Financial Tracker
 
-Rastreador de finanzas personales de un solo usuario. Sustituye una hoja de cálculo que era la fuente
+Rastreador de finanzas personales de un solo dueño. Sustituye una hoja de cálculo que era la fuente
 de verdad anterior; ahora lo es Supabase, y la hoja se importó una vez y ya no se sincroniza.
 
-No es un producto multiusuario ni pretende serlo: hay una sola cuenta autorizada y todo el modelo está
-construido alrededor de esa suposición.
+No es un producto multiusuario ni pretende serlo: todos los datos pertenecen a una sola cuenta. La
+única excepción son los invitados de una meta (ver más abajo), que ven esa meta y registran
+movimientos con el dinero del dueño, sin ver nada más.
 
 ## Stack
 
@@ -32,7 +33,7 @@ pnpm dev                  # http://localhost:4321
 |---|---|
 | `PUBLIC_SUPABASE_URL` | URL del proyecto |
 | `PUBLIC_SUPABASE_ANON_KEY` | Llave anónima; es segura en el navegador porque RLS protege cada fila |
-| `ADMIN_EMAIL` | La única cuenta de Google que pasa el middleware |
+| `ADMIN_EMAIL` | La cuenta dueña de todos los datos |
 | `PUBLIC_SITE_URL` | Base para construir el redirect de OAuth |
 | `SUPABASE_SERVICE_ROLE_KEY` | Solo para el script de import. Nunca llega al navegador |
 | `SUPABASE_DB_PASSWORD` | Solo para aplicar migraciones desde la CLI |
@@ -48,7 +49,24 @@ Las credenciales de Google viven solo en el proyecto de Supabase.
 Hay dos capas y las dos deben quedarse:
 
 1. Los registros están deshabilitados en Supabase Auth.
-2. El middleware rechaza cualquier correo distinto de `ADMIN_EMAIL`.
+2. El middleware rechaza cualquier correo que no sea `ADMIN_EMAIL` ni un invitado con una meta
+   compartida.
+
+### Invitados de una meta
+
+Desde el detalle de una meta, **Compartir** da acceso a otra persona por email. El invitado solo puede
+abrir esa meta, ver su progreso y sus movimientos, y registrar gastos o ingresos. No edita, no borra,
+no ve "Dónde está el dinero" ni las cuentas del dueño.
+
+Para dar acceso:
+
+1. Crea el usuario en Supabase (Authentication → Users → Add user) con el email de Google del invitado.
+   Los registros siguen deshabilitados, así que este paso es manual.
+2. En la meta, **Compartir** con ese email, su nombre y las categorías de gasto e ingreso que llevarán
+   sus movimientos.
+
+Sus movimientos son del dueño: aparecen en Transacciones y en el resumen, cargados a la cuenta
+`En manos de <nombre>`, que se crea al compartir. Quitar el acceso conserva la cuenta y los movimientos.
 
 ## Comandos
 

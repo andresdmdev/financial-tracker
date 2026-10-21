@@ -22,9 +22,16 @@ declare namespace App {
       import('./lib/database.types').Database
     >;
     /**
-     * Authenticated admin user, or null on public routes. Validated against the
-     * auth server by the middleware, not merely decoded from the cookie.
+     * Authenticated user, or null on public routes. Validated against the auth
+     * server by the middleware, not merely decoded from the cookie.
      */
     user: import('@supabase/supabase-js').User | null;
+    /**
+     * `owner` is ADMIN_EMAIL; `member` is a guest with at least one shared goal.
+     * Null exactly when `user` is null.
+     */
+    role: import('./lib/access').Role | null;
+    /** Goals shared with a guest. Always empty for the owner. */
+    sharedGoalIds: string[];
   }
 }

@@ -270,3 +270,65 @@ export const goalInputSchema = z.object({
 });
 
 export type GoalInput = z.infer<typeof goalInputSchema>;
+
+/**
+ * Grants a guest access to one goal. The categories are the ones every movement
+ * the guest records will carry, one per direction: the guest never picks one,
+ * and the database refuses any other.
+ */
+export const goalShareInputSchema = z.object({
+  member_email: z.string().trim().toLowerCase().pipe(z.email('Email inválido')),
+  member_name: z.string().trim().min(1, 'El nombre es obligatorio').max(80),
+  expense_category_id: z.uuid('Selecciona una categoría de gasto'),
+  income_category_id: z.uuid('Selecciona una categoría de ingreso'),
+});
+
+export type GoalShareInput = z.infer<typeof goalShareInputSchema>;
+
+/**
+ * Movement recorded by a guest on a shared goal.
+ *
+ * Account, category, goal and owner are absent on purpose: the server takes
+ * them from the share, and the RLS insert policy rejects anything else. Only
+ * income and expense are allowed, since a guest moves money in or out of the
+ * goal, never between the owner's accounts.
+ */
+export const memberMovementInputSchema = z
+  .object({
+    occurred_on: z.string().regex(ISO_DATE, 'Fecha inválida'),
+    direction: z.enum(['income', 'expense']),
+    amount_usd: requiredAmount,
+    amount_local: optionalAmount,
+    local_currency: localCurrency,
+    payment_method: z
+      .string()
+      .trim()
+      .max(60)
+      .nullish()
+      .transform((value) => (value === '' || value === undefined ? null : value)),
+    tags: z.array(z.string().trim().min(1)).default([]),
+    notes: z
+      .string()
+      .trim()
+      .max(500)
+      .nullish()
+      .transform((value) => (value === '' || value === undefined ? null : value)),
+  })
+  .superRefine((value, ctx) => {
+    if (value.amount_local !== null && value.local_currency === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['local_currency'],
+        message: 'Indica en qué moneda pagaste',
+      });
+    }
+    if (value.amount_local === null && value.local_currency !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['amount_local'],
+        message: 'Indica el monto en esa moneda',
+      });
+    }
+  });
+
+export type MemberMovementInput = z.infer<typeof memberMovementInputSchema>;

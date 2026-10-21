@@ -90,8 +90,23 @@ type TransactionRow = {
   notes: string | null;
   source: string;
   source_row_hash: string | null;
+  payment_method: string | null;
+  created_by_email: string | null;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+type GoalShareRow = {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  member_email: string;
+  member_name: string;
+  account_id: string;
+  expense_category_id: string;
+  income_category_id: string;
+  created_at: string;
 }
 
 type BudgetRow = {
@@ -348,6 +363,12 @@ export interface Database {
         Row: GoalAllocationRow;
         Insert: Insert<GoalAllocationRow>;
         Update: Partial<GoalAllocationRow>;
+        Relationships: [];
+      };
+      goal_shares: {
+        Row: GoalShareRow;
+        Insert: Insert<GoalShareRow>;
+        Update: Partial<GoalShareRow>;
         Relationships: [];
       };
     };
