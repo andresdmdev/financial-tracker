@@ -124,7 +124,8 @@ These are enforced by check constraints; code must not work around them.
   transactions record where it came from. Deriving one from the other produces a confident wrong answer.
 - **A guest is a narrow second role, not a second user of the data.** `goal_shares` grants an email
   access to one goal. `src/lib/access.ts` resolves `locals.role` (`owner | member`) and confines a guest
-  to `/goals/<shared id>` and `POST /api/goals/<shared id>/movements`, but that is UI only: the guest
+  to `/goals/<shared id>`, `POST /api/goals/<shared id>/movements` and the public, read-only
+  `GET /api/exchange-rates` that the goal page displays, but that is UI only: the guest
   holds a JWT and the anon key, so the `*_member_*` RLS policies are the real boundary. A guest has
   select and insert policies and deliberately no update or delete. Every row a guest writes carries the
   **owner's** `user_id`, the share's account (`En manos de <nombre>`) and the share's category for its

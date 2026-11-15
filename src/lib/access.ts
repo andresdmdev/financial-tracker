@@ -47,8 +47,9 @@ export type MemberRouteVerdict = 'allow' | 'redirect' | 'forbid';
 /**
  * Decides whether a guest may reach a route.
  *
- * Only the detail page of a shared goal and the endpoint that records a
- * movement on it are open. Any other page redirects to the guest's first goal
+ * Only the detail page of a shared goal, the endpoint that records a movement
+ * on it, and the read-only exchange rates that page shows are open. The rates
+ * are public market data and expose nothing of the owner's. Any other page redirects to the guest's first goal
  * so a stray link lands somewhere useful; any other API call is refused.
  */
 export function memberRoute(
@@ -58,6 +59,8 @@ export function memberRoute(
 ): MemberRouteVerdict {
   const page = pathname.match(/^\/goals\/([^/]+)\/?$/);
   if (page !== null && method === 'GET' && sharedGoalIds.includes(page[1]!)) return 'allow';
+
+  if (/^\/api\/exchange-rates\/?$/.test(pathname) && method === 'GET') return 'allow';
 
   const movements = pathname.match(/^\/api\/goals\/([^/]+)\/movements\/?$/);
   if (movements !== null && method === 'POST' && sharedGoalIds.includes(movements[1]!)) {

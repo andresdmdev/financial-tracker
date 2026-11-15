@@ -48,6 +48,16 @@ export function formatUsd(value: number | string | null | undefined): string {
 }
 
 /**
+ * Formats an exchange rate in bolivares per unit as `Bs 914,02`. The symbol is
+ * prepended by hand for the same reason as `formatUsd`: `Intl` renders VES with
+ * an inconsistent symbol across runtimes.
+ */
+export function formatVesRate(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—';
+  return `Bs ${USD_FORMATTER.format(value)}`;
+}
+
+/**
  * Formats the original amount of a transaction in the currency it was paid in,
  * shown alongside its canonical USD value. The currency must be explicit: the
  * imported history mixes bolivares and Colombian pesos.

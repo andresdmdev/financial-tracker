@@ -6,6 +6,7 @@ import GoalProgressChart from '@/components/charts/GoalProgressChart';
 import GoalAllocationEditor from '@/components/goals/GoalAllocationEditor';
 import GoalActions from '@/components/goals/GoalActions';
 import MemberMovementForm from '@/components/goals/MemberMovementForm';
+import ExchangeRates from '@/components/dashboard/ExchangeRates';
 import {
   authorLabel,
   getGoal,
@@ -134,6 +135,7 @@ function movementMeta(movement: GoalMovement): string {
           )
         )
       }
+      <ExchangeRates variant="compact" client:load />
     </header>
 
     <div class:list={['grid gap-4 sm:grid-cols-2', isOwner ? 'lg:grid-cols-4' : 'lg:grid-cols-3']}>
