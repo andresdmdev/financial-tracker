@@ -7,6 +7,8 @@ import GoalAllocationEditor from '@/components/goals/GoalAllocationEditor';
 import GoalActions from '@/components/goals/GoalActions';
 import MemberMovementForm from '@/components/goals/MemberMovementForm';
 import ExchangeRates from '@/components/dashboard/ExchangeRates';
+import GoalTabs from '@/components/goals/GoalTabs.astro';
+import { getOpenGoalTaskCount } from '@/lib/queries/goal-tasks';
 import {
   authorLabel,
   getGoal,
@@ -30,12 +32,13 @@ if (id === undefined) return Astro.redirect('/goals');
 const goal = await getGoal(supabase, id);
 if (goal === null) return Astro.redirect('/goals');
 
-const [movements, progressList, allocations, lookups, shares] = await Promise.all([
+const [movements, progressList, allocations, lookups, shares, openTaskCount] = await Promise.all([
   getGoalMovements(supabase, id),
   getGoalProgress(supabase),
   isOwner ? getGoalAllocations(supabase, id) : Promise.resolve([]),
   isOwner ? getLookups(supabase) : Promise.resolve(null),
   isOwner ? getGoalShares(supabase, id) : Promise.resolve([]),
+  getOpenGoalTaskCount(supabase, id),
 ]);
 
 const progress = progressList.find((item) => item.goalId === id) ?? null;
@@ -136,6 +139,7 @@ function movementMeta(movement: GoalMovement): string {
         )
       }
       <ExchangeRates variant="compact" client:load />
+      <GoalTabs goalId={goal.id} active="summary" openTaskCount={openTaskCount} />
     </header>
 
     <div class:list={['grid gap-4 sm:grid-cols-2', isOwner ? 'lg:grid-cols-4' : 'lg:grid-cols-3']}>

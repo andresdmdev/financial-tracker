@@ -128,6 +128,17 @@ export function toMonthKey(date: Date = new Date()): string {
 }
 
 /**
+ * Returns the calendar day of the given date in the runtime's own timezone, as
+ * `YYYY-MM-DD`. Called in the browser it is the user's "today", which the
+ * server's UTC date is not in the evening.
+ */
+export function toDayKey(date: Date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
  * Returns the last `months` month keys ending with the current one, oldest
  * first. Charts use it to draw a dense axis: without every month present, a
  * month with no spend becomes a gap the line jumps over instead of a zero.

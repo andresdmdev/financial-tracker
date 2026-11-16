@@ -332,3 +332,50 @@ export const memberMovementInputSchema = z
   });
 
 export type MemberMovementInput = z.infer<typeof memberMovementInputSchema>;
+
+/**
+ * Blank optional text becomes null, so the database never stores `''` where
+ * its length checks expect either a value or nothing.
+ */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullish()
+    .transform((value) => (value === '' || value === undefined ? null : value));
+
+/**
+ * Shape of a goal task as created or edited by the owner or a guest.
+ *
+ * Ownership, goal and author are absent on purpose: the route takes the goal
+ * from the URL and its owner from the goal, and the trigger stamps the author.
+ * The completion refinement mirrors `goal_tasks_completed_on_matches_status`.
+ */
+export const goalTaskInputSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Escribe un nombre').max(120),
+    description: optionalText(1000),
+    tag: optionalText(30),
+    priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    status: z.enum(['pending', 'in_progress', 'completed']),
+    completed_on: z
+      .union([z.string().regex(ISO_DATE, 'Fecha inválida'), z.literal('')])
+      .nullish()
+      .transform((value) => (value === '' || value === undefined ? null : value)),
+  })
+  .superRefine((value, ctx) => {
+    if (value.status === 'completed' && value.completed_on === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['completed_on'],
+        message: 'Indica cuándo se completó',
+      });
+    }
+  })
+  .transform((value) => ({
+    ...value,
+    completed_on: value.status === 'completed' ? value.completed_on : null,
+  }));
+
+export type GoalTaskInput = z.infer<typeof goalTaskInputSchema>;

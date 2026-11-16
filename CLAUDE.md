@@ -41,7 +41,10 @@ passing the connection string instead, which only needs `SUPABASE_DB_PASSWORD` f
 npx supabase db push --db-url "postgresql://postgres:<urlencoded-password>@db.<ref>.supabase.co:5432/postgres"
 ```
 
-The direct host resolves to IPv6 only; the IPv4 fallback is the session-mode pooler on port 5432.
+The direct host resolves to IPv6 only; the IPv4 fallback is the session-mode pooler on port 5432:
+`postgresql://postgres.<ref>:<urlencoded-password>@aws-0-us-east-2.pooler.supabase.com:5432/postgres`
+(`aws-1-us-east-2` answers "tenant not found"). Run `--dry-run` first; from an agent the CLI refuses to
+write without `--yes`.
 `supabase gen types` and `db reset` both require Docker Desktop to be running, so
 `src/lib/database.types.ts` stays hand-written. Verify it against the live schema by diffing
 `information_schema.columns` rather than assuming it drifted.
@@ -124,12 +127,18 @@ These are enforced by check constraints; code must not work around them.
   transactions record where it came from. Deriving one from the other produces a confident wrong answer.
 - **A guest is a narrow second role, not a second user of the data.** `goal_shares` grants an email
   access to one goal. `src/lib/access.ts` resolves `locals.role` (`owner | member`) and confines a guest
-  to `/goals/<shared id>`, `POST /api/goals/<shared id>/movements` and the public, read-only
-  `GET /api/exchange-rates` that the goal page displays, but that is UI only: the guest
+  to `/goals/<shared id>` and its `/tasks` page, `POST /api/goals/<shared id>/movements`, the task
+  endpoints under `/api/goals/<shared id>/tasks`, and the public, read-only `GET /api/exchange-rates`
+  that the goal page displays, but that is UI only: the guest
   holds a JWT and the anon key, so the `*_member_*` RLS policies are the real boundary. A guest has
-  select and insert policies and deliberately no update or delete. Every row a guest writes carries the
+  select and insert policies on transactions and deliberately no update or delete. Every row a guest writes carries the
   **owner's** `user_id`, the share's account (`En manos de <nombre>`) and the share's category for its
   direction; the insert policy rejects anything else. Never let a guest choose an account or category.
+- **Goal tasks are shared in full and never hard-deleted.** A guest may create, edit and remove the
+  tasks of a goal shared with it (`goal_tasks_member_*` select/insert/update; no delete policy), so
+  removal sets `deleted_at` and the `set_goal_task_audit` trigger records `deleted_by_email`. A deleted
+  task cannot be edited or restored; every read filters `deleted_at is null`. The same trigger stamps
+  the author and freezes `user_id` / `goal_id` on update.
 - **Authorship is stamped, never sent.** `transactions.created_by_email` / `created_by_name` are set by
   the `set_transaction_author` trigger from the JWT and frozen on update. A guest is named by
   `goal_shares.member_name`, which the owner wrote, not by its own editable `user_metadata`. Spreadsheet

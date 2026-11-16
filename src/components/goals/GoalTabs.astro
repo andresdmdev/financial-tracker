@@ -1,0 +1,44 @@
+---
+/**
+ * Pill tabs switching between a goal's summary and its tasks. Plain links with
+ * no JavaScript, styled like the section pills in `DashboardLayout`, and shown
+ * the same to the owner and to guests. The task count is open tasks only, so
+ * the badge says how much is left rather than how much was ever written.
+ */
+interface Props {
+  goalId: string;
+  active: 'summary' | 'tasks';
+  openTaskCount: number;
+}
+
+const { goalId, active, openTaskCount } = Astro.props;
+
+const tabs = [
+  { key: 'summary', label: 'Resumen', href: `/goals/${goalId}` },
+  { key: 'tasks', label: 'Tareas', href: `/goals/${goalId}/tasks` },
+] as const;
+---
+
+<nav class="flex w-fit gap-1 rounded-xl border border-border bg-card p-1" aria-label="Secciones de la meta">
+  {
+    tabs.map((tab) => (
+      <a
+        href={tab.href}
+        aria-current={active === tab.key ? 'page' : undefined}
+        class:list={[
+          'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+          active === tab.key
+            ? 'bg-accent text-accent-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        ]}
+      >
+        {tab.label}
+        {tab.key === 'tasks' && openTaskCount > 0 && (
+          <span class="tabular rounded-full bg-primary/12 px-1.5 text-xs text-primary">
+            {openTaskCount}
+          </span>
+        )}
+      </a>
+    ))
+  }
+</nav>

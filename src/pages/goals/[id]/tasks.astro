@@ -1,0 +1,39 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import GoalTabs from '@/components/goals/GoalTabs.astro';
+import GoalTasksPanel from '@/components/goals/GoalTasksPanel';
+import { getGoal } from '@/lib/queries/goals';
+import { getGoalTasks } from '@/lib/queries/goal-tasks';
+
+const { id } = Astro.params;
+const { supabase, role } = Astro.locals;
+
+if (id === undefined) return Astro.redirect('/goals');
+
+const goal = await getGoal(supabase, id);
+if (goal === null) return Astro.redirect('/goals');
+
+const tasks = await getGoalTasks(supabase, id);
+const openTaskCount = tasks.filter((task) => task.status !== 'completed').length;
+---
+
+<DashboardLayout title={`Tareas · ${goal.name}`}>
+  <div class="space-y-6">
+    <header class="space-y-3">
+      {
+        role === 'owner' && (
+          <a
+            href="/goals"
+            class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← Metas de ahorro
+          </a>
+        )
+      }
+      <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{goal.name}</h1>
+      <GoalTabs goalId={goal.id} active="tasks" openTaskCount={openTaskCount} />
+    </header>
+
+    <GoalTasksPanel goalId={goal.id} goalName={goal.name} initialTasks={tasks} client:load />
+  </div>
+</DashboardLayout>

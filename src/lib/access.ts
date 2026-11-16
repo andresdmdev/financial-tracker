@@ -47,8 +47,9 @@ export type MemberRouteVerdict = 'allow' | 'redirect' | 'forbid';
 /**
  * Decides whether a guest may reach a route.
  *
- * Only the detail page of a shared goal, the endpoint that records a movement
- * on it, and the read-only exchange rates that page shows are open. The rates
+ * Only the detail and tasks pages of a shared goal, the endpoint that records a
+ * movement on it, the endpoints that create, edit and soft-delete its tasks,
+ * and the read-only exchange rates the goal page shows are open. The rates
  * are public market data and expose nothing of the owner's. Any other page redirects to the guest's first goal
  * so a stray link lands somewhere useful; any other API call is refused.
  */
@@ -57,10 +58,22 @@ export function memberRoute(
   method: string,
   sharedGoalIds: string[],
 ): MemberRouteVerdict {
-  const page = pathname.match(/^\/goals\/([^/]+)\/?$/);
+  const page = pathname.match(/^\/goals\/([^/]+)(?:\/tasks)?\/?$/);
   if (page !== null && method === 'GET' && sharedGoalIds.includes(page[1]!)) return 'allow';
 
   if (/^\/api\/exchange-rates\/?$/.test(pathname) && method === 'GET') return 'allow';
+
+  const tasks = pathname.match(/^\/api\/goals\/([^/]+)\/tasks\/?$/);
+  if (tasks !== null && method === 'POST' && sharedGoalIds.includes(tasks[1]!)) return 'allow';
+
+  const task = pathname.match(/^\/api\/goals\/([^/]+)\/tasks\/[^/]+\/?$/);
+  if (
+    task !== null &&
+    (method === 'PATCH' || method === 'DELETE') &&
+    sharedGoalIds.includes(task[1]!)
+  ) {
+    return 'allow';
+  }
 
   const movements = pathname.match(/^\/api\/goals\/([^/]+)\/movements\/?$/);
   if (movements !== null && method === 'POST' && sharedGoalIds.includes(movements[1]!)) {

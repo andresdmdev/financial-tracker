@@ -26,6 +26,11 @@ export type TxStatus = 'paid' | 'pending';
 
 export type GoalStatus = 'active' | 'completed' | 'abandoned';
 
+export type GoalTaskStatus = 'pending' | 'in_progress' | 'completed';
+
+/** 1 = alta, 2 = media, 3 = baja; ascending order is most urgent first. */
+export type GoalTaskPriority = 1 | 2 | 3;
+
 /** Currencies the original amount may have been paid in, besides USD. */
 export type LocalCurrency = 'VES' | 'COP';
 
@@ -108,6 +113,24 @@ type GoalShareRow = {
   income_category_id: string;
   created_at: string;
 }
+
+type GoalTaskRow = {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  title: string;
+  description: string | null;
+  tag: string | null;
+  priority: GoalTaskPriority;
+  status: GoalTaskStatus;
+  completed_on: string | null;
+  created_by_email: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  deleted_by_email: string | null;
+};
 
 type BudgetRow = {
   id: string;
@@ -371,6 +394,12 @@ export interface Database {
         Update: Partial<GoalShareRow>;
         Relationships: [];
       };
+      goal_tasks: {
+        Row: GoalTaskRow;
+        Insert: Insert<GoalTaskRow, 'priority' | 'status'>;
+        Update: Partial<GoalTaskRow>;
+        Relationships: [];
+      };
     };
     Views: {
       v_monthly_summary: { Row: MonthlySummaryRow; Relationships: [] };
@@ -395,6 +424,7 @@ export interface Database {
       tx_direction: TxDirection;
       tx_status: TxStatus;
       goal_status: GoalStatus;
+      goal_task_status: GoalTaskStatus;
     };
     CompositeTypes: Record<never, never>;
   };
