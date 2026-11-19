@@ -37,6 +37,10 @@ interface Props {
   goalId: string;
   goalName: string;
   initialTasks: GoalTask[];
+  /** When set, the board belongs to this section and new tasks are created in it. */
+  sectionId?: string;
+  /** Keeps each card's controls below its text, for a narrow side column. */
+  compact?: boolean;
 }
 
 type Filter = 'all' | GoalTaskStatus;
@@ -68,11 +72,16 @@ const STATUS_TONE: Record<GoalTaskStatus, string> = {
  * same `sortGoalTasks` the page used, so a task jumps to where a reload would
  * put it without reloading. Removal says the task disappears for everyone,
  * because it does, even though the row survives as a logical deletion.
+ *
+ * The same board serves a goal's general tasks and each section's own tasks;
+ * `sectionId` only decides where a new task is created.
  */
 export default function GoalTasksPanel({
   goalId,
   goalName,
   initialTasks,
+  sectionId,
+  compact = false,
 }: Props): React.ReactElement {
   const [tasks, setTasks] = useState<GoalTask[]>(initialTasks);
   const [filter, setFilter] = useState<Filter>('all');
@@ -193,7 +202,12 @@ export default function GoalTasksPanel({
                     busyId === task.id && 'opacity-60',
                   )}
                 >
-                  <CardContent className="flex flex-col gap-3 px-4 sm:flex-row sm:items-start sm:justify-between">
+                  <CardContent
+                    className={cn(
+                      'flex flex-col gap-3 px-4',
+                      !compact && 'sm:flex-row sm:items-start sm:justify-between',
+                    )}
+                  >
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-start gap-2.5">
                         <span
@@ -233,7 +247,7 @@ export default function GoalTasksPanel({
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5 pl-4.5 sm:pl-0">
+                    <div className={cn('flex shrink-0 items-center gap-1.5 pl-4.5', !compact && 'sm:pl-0')}>
                       <Select
                         value={task.status}
                         disabled={busyId === task.id}
@@ -285,6 +299,7 @@ export default function GoalTasksPanel({
           {editing !== undefined && (
             <GoalTaskForm
               goalId={goalId}
+              sectionId={sectionId}
               task={editing}
               onCancel={() => setEditing(undefined)}
               onSaved={(saved) => {

@@ -73,14 +73,23 @@ export function sortGoalTasks(tasks: GoalTask[]): GoalTask[] {
 }
 
 /**
- * Every live task of a goal, in display order.
+ * Every live task of a goal in display order: the general ones when
+ * `sectionId` is null, otherwise only that section's. The two lists never mix.
  */
-export async function getGoalTasks(supabase: Client, goalId: string): Promise<GoalTask[]> {
-  const { data, error } = await supabase
+export async function getGoalTasks(
+  supabase: Client,
+  goalId: string,
+  sectionId: string | null = null,
+): Promise<GoalTask[]> {
+  const base = supabase
     .from('goal_tasks')
     .select(GOAL_TASK_COLUMNS)
     .eq('goal_id', goalId)
-    .is('deleted_at', null)
+    .is('deleted_at', null);
+
+  const { data, error } = await (sectionId === null
+    ? base.is('section_id', null)
+    : base.eq('section_id', sectionId))
     .order('priority', { ascending: true })
     .order('created_at', { ascending: true });
 
@@ -92,7 +101,8 @@ export async function getGoalTasks(supabase: Client, goalId: string): Promise<Go
 }
 
 /**
- * Number of tasks still to do on a goal, shown on the tab that leads to them.
+ * Number of general tasks still to do on a goal, shown on the tab that leads
+ * to them. Section tasks are counted in the sections menu instead.
  */
 export async function getOpenGoalTaskCount(supabase: Client, goalId: string): Promise<number> {
   const { count, error } = await supabase
@@ -100,6 +110,7 @@ export async function getOpenGoalTaskCount(supabase: Client, goalId: string): Pr
     .select('id', { count: 'exact', head: true })
     .eq('goal_id', goalId)
     .is('deleted_at', null)
+    .is('section_id', null)
     .neq('status', 'completed');
 
   if (error !== null) {

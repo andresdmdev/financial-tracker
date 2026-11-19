@@ -118,6 +118,7 @@ type GoalTaskRow = {
   id: string;
   user_id: string;
   goal_id: string;
+  section_id: string | null;
   title: string;
   description: string | null;
   tag: string | null;
@@ -130,6 +131,18 @@ type GoalTaskRow = {
   updated_at: string;
   deleted_at: string | null;
   deleted_by_email: string | null;
+};
+
+type GoalSectionRow = {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  title: string;
+  content_md: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 };
 
 type BudgetRow = {
@@ -392,6 +405,12 @@ export interface Database {
         Row: GoalShareRow;
         Insert: Insert<GoalShareRow>;
         Update: Partial<GoalShareRow>;
+        Relationships: [];
+      };
+      goal_sections: {
+        Row: GoalSectionRow;
+        Insert: Insert<GoalSectionRow, 'content_md' | 'sort_order'>;
+        Update: Partial<GoalSectionRow>;
         Relationships: [];
       };
       goal_tasks: {

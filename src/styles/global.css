@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
 
 /**
  * Kept so the `dark:` utilities inside the shadcn primitives keep compiling

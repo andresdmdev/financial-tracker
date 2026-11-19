@@ -1,6 +1,8 @@
 ---
 import DashboardLayout from '@/layouts/DashboardLayout.astro';
 import GoalTabs from '@/components/goals/GoalTabs.astro';
+import GoalSectionsMenu from '@/components/goals/GoalSectionsMenu';
+import { getGoalSections } from '@/lib/queries/goal-sections';
 import GoalTasksPanel from '@/components/goals/GoalTasksPanel';
 import { getGoal } from '@/lib/queries/goals';
 import { getGoalTasks } from '@/lib/queries/goal-tasks';
@@ -13,7 +15,10 @@ if (id === undefined) return Astro.redirect('/goals');
 const goal = await getGoal(supabase, id);
 if (goal === null) return Astro.redirect('/goals');
 
-const tasks = await getGoalTasks(supabase, id);
+const [tasks, sections] = await Promise.all([
+  getGoalTasks(supabase, id),
+  getGoalSections(supabase, id),
+]);
 const openTaskCount = tasks.filter((task) => task.status !== 'completed').length;
 ---
 
@@ -31,7 +36,10 @@ const openTaskCount = tasks.filter((task) => task.status !== 'completed').length
         )
       }
       <h1 class="text-xl font-semibold tracking-tight sm:text-2xl">{goal.name}</h1>
-      <GoalTabs goalId={goal.id} active="tasks" openTaskCount={openTaskCount} />
+      <div class="flex flex-wrap items-center gap-2">
+        <GoalTabs goalId={goal.id} active="tasks" openTaskCount={openTaskCount} />
+        <GoalSectionsMenu goalId={goal.id} sections={sections} canEdit={role === 'owner'} client:load />
+      </div>
     </header>
 
     <GoalTasksPanel goalId={goal.id} goalName={goal.name} initialTasks={tasks} client:load />

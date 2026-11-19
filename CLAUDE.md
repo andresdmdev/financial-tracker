@@ -127,7 +127,7 @@ These are enforced by check constraints; code must not work around them.
   transactions record where it came from. Deriving one from the other produces a confident wrong answer.
 - **A guest is a narrow second role, not a second user of the data.** `goal_shares` grants an email
   access to one goal. `src/lib/access.ts` resolves `locals.role` (`owner | member`) and confines a guest
-  to `/goals/<shared id>` and its `/tasks` page, `POST /api/goals/<shared id>/movements`, the task
+  to `/goals/<shared id>`, its `/tasks` page and its `/sections/<id>` pages, `POST /api/goals/<shared id>/movements`, the task
   endpoints under `/api/goals/<shared id>/tasks`, and the public, read-only `GET /api/exchange-rates`
   that the goal page displays, but that is UI only: the guest
   holds a JWT and the anon key, so the `*_member_*` RLS policies are the real boundary. A guest has
@@ -139,6 +139,12 @@ These are enforced by check constraints; code must not work around them.
   removal sets `deleted_at` and the `set_goal_task_audit` trigger records `deleted_by_email`. A deleted
   task cannot be edited or restored; every read filters `deleted_at is null`. The same trigger stamps
   the author and freezes `user_id` / `goal_id` on update.
+- **Goal sections are owner-written and guest-read.** `goal_sections` holds a markdown document per job
+  within a goal; only the owner inserts or updates (guests have a select policy only), and removal is
+  logical. `goal_tasks.section_id` is null for a goal's general tasks; a composite FK
+  `(section_id, goal_id)` keeps a section's tasks on its own goal, and the task trigger freezes it, so
+  general and section task lists never mix. Markdown is rendered server-side with `react-markdown`,
+  which never executes raw HTML.
 - **Authorship is stamped, never sent.** `transactions.created_by_email` / `created_by_name` are set by
   the `set_transaction_author` trigger from the JWT and frozen on update. A guest is named by
   `goal_shares.member_name`, which the owner wrote, not by its own editable `user_metadata`. Spreadsheet

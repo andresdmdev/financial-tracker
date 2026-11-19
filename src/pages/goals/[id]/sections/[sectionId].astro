@@ -1,0 +1,101 @@
+---
+import DashboardLayout from '@/layouts/DashboardLayout.astro';
+import GoalTabs from '@/components/goals/GoalTabs.astro';
+import GoalSectionsMenu from '@/components/goals/GoalSectionsMenu';
+import GoalSectionActions from '@/components/goals/GoalSectionActions';
+import GoalTasksPanel from '@/components/goals/GoalTasksPanel';
+import MarkdownView from '@/components/MarkdownView';
+import { getGoal } from '@/lib/queries/goals';
+import { getGoalSection, getGoalSections } from '@/lib/queries/goal-sections';
+import { getGoalTasks, getOpenGoalTaskCount } from '@/lib/queries/goal-tasks';
+
+const { id, sectionId } = Astro.params;
+const { supabase, role } = Astro.locals;
+const isOwner = role === 'owner';
+
+if (id === undefined || sectionId === undefined) return Astro.redirect('/goals');
+
+const [goal, section] = await Promise.all([
+  getGoal(supabase, id),
+  getGoalSection(supabase, id, sectionId),
+]);
+if (goal === null) return Astro.redirect('/goals');
+if (section === null) return Astro.redirect(`/goals/${id}`);
+
+const [tasks, sections, openTaskCount] = await Promise.all([
+  getGoalTasks(supabase, id, sectionId),
+  getGoalSections(supabase, id),
+  getOpenGoalTaskCount(supabase, id),
+]);
+const openSectionTasks = tasks.filter((task) => task.status !== 'completed').length;
+---
+
+<DashboardLayout title={`${section.title} · ${goal.name}`}>
+  <div class="space-y-6">
+    <header class="space-y-3">
+      <a
+        href={`/goals/${goal.id}`}
+        class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        ← {goal.name}
+      </a>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <h1 class="min-w-0 text-xl font-semibold tracking-tight sm:text-2xl">{section.title}</h1>
+        {
+          isOwner && (
+            <GoalSectionActions
+              goalId={goal.id}
+              section={{ id: section.id, title: section.title, contentMd: section.contentMd }}
+              client:load
+            />
+          )
+        }
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <GoalTabs goalId={goal.id} active="section" openTaskCount={openTaskCount} />
+        <GoalSectionsMenu
+          goalId={goal.id}
+          sections={sections}
+          activeSectionId={section.id}
+          canEdit={isOwner}
+          client:load
+        />
+      </div>
+      <a
+        href="#tareas"
+        class="inline-flex items-center gap-1 text-sm font-medium text-primary lg:hidden"
+      >
+        Ver tareas ({openSectionTasks} abiertas) ↓
+      </a>
+    </header>
+
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
+      <article class="min-w-0 rounded-xl border border-border bg-card px-4 py-5 shadow-sm sm:px-6">
+        {
+          section.contentMd.trim() === '' ? (
+            <p class="py-8 text-center text-sm text-muted-foreground">
+              Esta sección todavía no tiene documento.
+            </p>
+          ) : (
+            <MarkdownView source={section.contentMd} />
+          )
+        }
+      </article>
+
+      <section
+        id="tareas"
+        class="scroll-mt-20 space-y-3 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto lg:pr-1"
+      >
+        <h2 class="text-base font-semibold tracking-tight">Tareas de la sección</h2>
+        <GoalTasksPanel
+          goalId={goal.id}
+          goalName={section.title}
+          initialTasks={tasks}
+          sectionId={section.id}
+          compact
+          client:load
+        />
+      </section>
+    </div>
+  </div>
+</DashboardLayout>

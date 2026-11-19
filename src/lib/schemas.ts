@@ -379,3 +379,29 @@ export const goalTaskInputSchema = z
   }));
 
 export type GoalTaskInput = z.infer<typeof goalTaskInputSchema>;
+
+/**
+ * A task as created: the editable fields plus the section it belongs to, if
+ * any. The section is fixed at creation, so edits use `goalTaskInputSchema`
+ * and the trigger ignores any attempt to move a task.
+ */
+export const goalTaskCreateSchema = goalTaskInputSchema.and(
+  z.object({
+    section_id: z
+      .union([z.uuid(), z.literal('')])
+      .nullish()
+      .transform((value) => (value === '' || value === undefined ? null : value)),
+  }),
+);
+
+export type GoalTaskCreate = z.infer<typeof goalTaskCreateSchema>;
+
+/**
+ * A goal section as written by the owner: a title and a markdown document.
+ */
+export const goalSectionInputSchema = z.object({
+  title: z.string().trim().min(1, 'Escribe un nombre').max(80),
+  content_md: z.string().max(50000, 'El documento es demasiado largo').default(''),
+});
+
+export type GoalSectionInput = z.infer<typeof goalSectionInputSchema>;

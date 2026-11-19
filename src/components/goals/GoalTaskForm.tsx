@@ -32,6 +32,8 @@ interface FormValues {
 
 interface Props {
   goalId: string;
+  /** Section a new task is created in; ignored when editing, since a task never moves. */
+  sectionId?: string;
   /** Null when creating: the form then posts instead of patching. */
   task: GoalTask | null;
   onCancel: () => void;
@@ -45,7 +47,13 @@ interface Props {
  * prefilled with the browser's today the moment it does, so marking something
  * done never asks for a date nobody wants to type.
  */
-export default function GoalTaskForm({ goalId, task, onCancel, onSaved }: Props): React.ReactElement {
+export default function GoalTaskForm({
+  goalId,
+  sectionId,
+  task,
+  onCancel,
+  onSaved,
+}: Props): React.ReactElement {
   const [form, setForm] = useState<FormValues>({
     title: task?.title ?? '',
     description: task?.description ?? '',
@@ -82,7 +90,7 @@ export default function GoalTaskForm({ goalId, task, onCancel, onSaved }: Props)
       {
         method: task === null ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(task === null ? { ...form, section_id: sectionId ?? null } : form),
       },
     );
 
